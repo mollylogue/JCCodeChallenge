@@ -5,6 +5,7 @@ import (
     "net/http"
     "crypto/sha512"
     "encoding/base64"
+    "time"
         )
 
 func encode_password(password string) (string){
@@ -16,12 +17,13 @@ func encode_password(password string) (string){
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-        
-        r.ParseForm()
-        password := r.Form.Get("password")
-        password = encode_password(password)
+    time.Sleep(5 * time.Second)
+    
+    r.ParseForm()
+    password := r.Form.Get("password")
+    password = encode_password(password)
 
-        fmt.Fprintf(w, "Password encoded %s", password)
+    fmt.Fprintf(w, "Password encoded %s", password)
         
 }
 
