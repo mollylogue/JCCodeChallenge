@@ -1,11 +1,14 @@
 package main
 
 import (
-    "fmt"
     "net/http"
     "crypto/sha512"
     "encoding/base64"
     "time"
+    "log"
+    "os"
+    "os/signal"
+    "context"
         )
 
 func encode_password(password string) (string){
@@ -18,18 +21,39 @@ func encode_password(password string) (string){
 
 func handler(w http.ResponseWriter, r *http.Request) {
     time.Sleep(5 * time.Second)
-    
+ 
+    logger := log.New(os.Stdout, "", 0)
     r.ParseForm()
     password := r.Form.Get("password")
     password = encode_password(password)
 
-    fmt.Fprintf(w, "Password encoded %s", password)
+    logger.Println("Password encoded ", password)
         
 }
 
 func main() {
 
-    http.HandleFunc("/", handler)
-    http.ListenAndServe(":8080", nil)
-    
+    logger := log.New(os.Stdout, "", 0)
+    stop := make(chan os.Signal, 1)
+    signal.Notify(stop, os.Interrupt)
+    port := ":8080"
+
+    s := &http.Server{
+                        Addr:           port,
+                        Handler:        http.HandlerFunc(handler),
+                        }
+
+    go func(){
+        logger.Printf("Listening on port %s...", port)
+        if err := s.ListenAndServe() ; err != nil {
+            logger.Println("Shutting down server...")
+        }
+    }()
+
+    <- stop
+
+    ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
+    s.Shutdown(ctx)
+
     }
