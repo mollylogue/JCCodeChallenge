@@ -9,6 +9,7 @@ import (
     "os"
     "os/signal"
     "context"
+    "flag"
         )
 
 func encode_password(password string) (string){
@@ -38,10 +39,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 
     logger := log.New(os.Stdout, "", 0)
- 
-    stop := make(chan os.Signal, 1)
-    signal.Notify(stop, os.Interrupt)
-    port := ":8080"
+
+    signal_channel := make(chan os.Signal, 1)
+    signal.Notify(signal_channel, os.Interrupt)
+
+    // Get port from command line arguments, default to 8080
+    portPtr := flag.String("port", "8080", "a string")
+    flag.Parse()
+    logger.Println("port:", *portPtr)
+    port := ":" + *portPtr
 
     // Create a new server
     s := &http.Server{
@@ -53,11 +59,11 @@ func main() {
     go func(){
         logger.Printf("Listening on port %s...", port)
         if err := s.ListenAndServe() ; err != nil {
-            logger.Println("Shutting down server...")
+            logger.Println("Gracefully shutting down server...")
         }
     }()
 
-    <- stop
+    <- signal_channel
 
     ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
